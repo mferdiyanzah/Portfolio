@@ -51,7 +51,5 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           password: ${{ secrets.DROPLET_PASSWORD }}
           script: |
-            cd /var/www/html
-            rm -rf *
-            tar -xvf dist.tar.gz
-            sudo service nginx restart
+            scp dist.tar.gz ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:/var/www/html
+            ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} "cd /var/www/html && tar -xvf dist.tar.gz && sudo service nginx restart"
