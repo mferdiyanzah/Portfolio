@@ -10,7 +10,7 @@ on:
       - master
 
 jobs:
-  test:
+  health-check:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,6 +23,37 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           password: ${{ secrets.DROPLET_PASSWORD }}
           script: whoami
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: "12.x"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      # deploy to nginx digital ocean droplet
+      - name: Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          password: ${{ secrets.DROPLET_PASSWORD }}
+          script: |
+            cd /var/www/html
+            git pull
+            npm install
+            npm run build
+            sudo service nginx restart
+
 # jobs:
 #   build:
 #     runs-on: ubuntu-latest
