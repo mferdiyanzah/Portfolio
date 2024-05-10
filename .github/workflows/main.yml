@@ -10,20 +10,7 @@ on:
       - master
 
 jobs:
-  health-check:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: check secrets ssh
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          password: ${{ secrets.DROPLET_PASSWORD }}
-          script: whoami
-  build-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -40,6 +27,22 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: dist/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
+
       # deploy to nginx digital ocean droplet
       - name: Deploy
         uses: appleboy/ssh-action@master
@@ -49,39 +52,6 @@ jobs:
           password: ${{ secrets.DROPLET_PASSWORD }}
           script: |
             cd /var/www/html
-            git pull
-            npm install
-            npm run build
+            rm -rf *
+            tar -xvf dist.tar.gz
             sudo service nginx restart
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - uses: actions/checkout@v2
-
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v1
-#         with:
-#           node-version: "12.x"
-
-#       - name: Install dependencies
-#         run: npm install
-
-#       - name: Build
-#         run: npm run build
-
-#       # deploy to nginx digital ocean droplet
-#       - name: Deploy
-#         uses: appleboy/ssh-action@master
-#         with:
-#           host: ${{ secrets.DROPLET_IP }}
-#           username: ${{ secrets.DROPLET_USER }}
-#           key: ${{ secrets.DROPLET_SSH_KEY }}
-#           script: |
-#             cd /var/www/html
-#             git pull
-#             npm install
-#             npm run build
-#             sudo service nginx restart
